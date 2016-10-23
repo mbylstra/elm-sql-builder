@@ -4,6 +4,7 @@ import Html.App
 import Html exposing (div, text, pre)
 
 import Example
+import SqlBuilder exposing (prettyPrint)
 
 --------------------------------------------------------------------------------
 
@@ -27,4 +28,4 @@ main =
     }
 
 view model =
-  pre [] [ text Example.sql ]
+  pre [] [ text <| prettyPrint Example.sql ]

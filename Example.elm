@@ -27,9 +27,10 @@ tables =
 sql =
   select [id, name, rating]
     |> from tables.movie
+    -- |> join
     |> where'
       ( movie.name `contains` "big"
-        `or` movie.name `contains` "little"
-        `and` movie.rating `gt` 7
+        `or` (movie.name `contains` "little")
+        `and` (movie.rating `gt` 7)
       )
     |> orderBy movie.rating Desc
