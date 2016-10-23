@@ -4,7 +4,7 @@ import String
 
 
 type Parameter =
-  Int Int
+  Number String
   | String String
   -- TODO: add more types such as dates
 
@@ -88,26 +88,26 @@ or pre post =
 
 contains : String -> String -> Query
 contains column s =
-  [ Sql <| column ++ " LIKE " ++ "\"%" ++ s ++ "%\"" ]
+  [ Sql <| column ++ " LIKE " ++ "\"%" ] ++ [ Parameter <| String s ] ++ [ Sql "%\"" ]
 
 
 -- comparators
 
 gt : String -> number -> Query
 gt column n =
-  [ Sql <| column ++ " > " ++ toString n ]
+  [ Sql <| column ++ " > " ] ++ [ Parameter <| Number (toString n) ]
 
 gte : String -> number -> Query
 gte column n =
-  [ Sql <| column ++ " >= " ++ toString n ]
+  [ Sql <| column ++ " >= " ] ++ [ Parameter <| Number (toString n) ]
 
 lt : String -> number -> Query
 lt column n =
-  [ Sql <| column ++ " < " ++ toString n ]
+  [ Sql <| column ++ " < " ] ++ [ Parameter <| Number (toString n) ]
 
 lte : String -> number -> Query
 lte column n =
-  [ Sql <| column ++ " <= " ++ toString n ]
+  [ Sql <| column ++ " <= " ] ++ [ Parameter <| Number (toString n) ]
 
 
 -- ordering
@@ -138,7 +138,7 @@ prettyPrint query =
           s
         Parameter p ->
           case p of
-            Int i ->
+            Number i ->
               toString i
             String s ->
               s
