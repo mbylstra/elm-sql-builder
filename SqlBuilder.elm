@@ -39,7 +39,7 @@ and pre post =
 
 or : String -> String -> String
 or pre post =
-  pre ++ " AND " ++  post
+  pre ++ " OR " ++  post
 
 
 -- string matching
