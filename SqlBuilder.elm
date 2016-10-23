@@ -3,13 +3,14 @@ module SqlBuilder exposing (..)
 import String
 
 
-type Placeholder =
+type Parameter =
   Int Int
   | String String
   -- TODO: add more types such as dates
 
 type QueryPart =
-  Query String | Placeholder Placeholder
+  Sql String | Parameter Parameter
+
 
 type alias Query = List QueryPart
 
@@ -21,7 +22,7 @@ select columns =
   let
     columnsString = String.join ", " columns
   in
-    [ Query <| "SELECT " ++ columnsString ]
+    [ Sql <| "SELECT " ++ columnsString ]
 
 allColumns : List String
 allColumns =
@@ -32,14 +33,14 @@ allColumns =
 
 from : String -> Query -> Query
 from table pre =
-  pre ++ [ Query <| "\nFROM " ++ table ]
+  pre ++ [ Sql <| "\nFROM " ++ table ]
 
 
 -- where
 
 where' : Query -> Query -> Query
-where' whereQuery pre =
-  pre ++ [ Query "\nWHERE " ] ++ whereQuery
+where' whereSql pre =
+  pre ++ [ Sql "\nWHERE " ] ++ whereSql
 
 -- join
 
@@ -68,45 +69,45 @@ where' whereQuery pre =
 -- fullOuterJoin =
 --   join' "FULL OUTER JOIN"
 --
--- join' : Query -> Query -> Query
+-- join' : Sql -> Sql -> Sql
 -- join' joinType pre =
---   pre ++  [ Query <| "\n" ++ joinType ]
+--   pre ++  [ Sql <| "\n" ++ joinType ]
 
 -- boolean
 
 and : Query -> Query -> Query
 and pre post =
-  pre ++ [ Query " AND " ] ++  post
+  pre ++ [ Sql " AND " ] ++  post
 
 or : Query -> Query -> Query
 or pre post =
-  pre ++ [Query " OR "] ++  post
+  pre ++ [Sql " OR "] ++  post
 
 
 -- string matching
 
 contains : String -> String -> Query
 contains column s =
-  [ Query <| column ++ " LIKE " ++ "\"%" ++ s ++ "%\"" ]
+  [ Sql <| column ++ " LIKE " ++ "\"%" ++ s ++ "%\"" ]
 
 
 -- comparators
 
 gt : String -> number -> Query
 gt column n =
-  [ Query <| column ++ " > " ++ toString n ]
+  [ Sql <| column ++ " > " ++ toString n ]
 
 gte : String -> number -> Query
 gte column n =
-  [ Query <| column ++ " >= " ++ toString n ]
+  [ Sql <| column ++ " >= " ++ toString n ]
 
 lt : String -> number -> Query
 lt column n =
-  [ Query <| column ++ " < " ++ toString n ]
+  [ Sql <| column ++ " < " ++ toString n ]
 
 lte : String -> number -> Query
 lte column n =
-  [ Query <| column ++ " <= " ++ toString n ]
+  [ Sql <| column ++ " <= " ++ toString n ]
 
 
 -- ordering
@@ -119,7 +120,7 @@ orderBy column orderBy pre =
   let
     order = toString orderBy |> String.toUpper
   in
-    pre ++ [ Query <| "\nORDER BY " ++ column ++ " " ++ order ]
+    pre ++ [ Sql <| "\nORDER BY " ++ column ++ " " ++ order ]
 
 -- TODO
 -- orderByMulti : List (String, OrderBy) -> String -> String
@@ -131,16 +132,16 @@ orderBy column orderBy pre =
 prettyPrint : Query -> String
 prettyPrint query =
   let
-    displayQueryPart queryPart =
+    displaySqlPart queryPart =
       case queryPart of
-        Query s ->
+        Sql s ->
           s
-        Placeholder p ->
+        Parameter p ->
           case p of
             Int i ->
               toString i
             String s ->
               s
   in
-    List.map displayQueryPart query
+    List.map displaySqlPart query
     |> String.join " "
