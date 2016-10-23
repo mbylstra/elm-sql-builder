@@ -45,33 +45,33 @@ where' whereSql pre =
 -- join
 
 
--- join =
---   join' "JOIN"
---
--- innerJoin =
---   join' "INNER JOIN"
---
--- leftJoin =
---   join' "LEFT JOIN"
---
--- leftOuterJoin =
---   join' "LEFT OUTER JOIN"
---
--- rightJoin =
---   join' "RIGHT JOIN"
---
--- rightOuterJoin =
---   join' "RIGHT OUTER JOIN"
---
--- fullJoin =
---   join' "FULL JOIN"
---
--- fullOuterJoin =
---   join' "FULL OUTER JOIN"
---
--- join' : Sql -> Sql -> Sql
--- join' joinType pre =
---   pre ++  [ Sql <| "\n" ++ joinType ]
+join =
+  join' "JOIN"
+
+innerJoin =
+  join' "INNER JOIN"
+
+leftJoin =
+  join' "LEFT JOIN"
+
+leftOuterJoin =
+  join' "LEFT OUTER JOIN"
+
+rightJoin =
+  join' "RIGHT JOIN"
+
+rightOuterJoin =
+  join' "RIGHT OUTER JOIN"
+
+fullJoin =
+  join' "FULL JOIN"
+
+fullOuterJoin =
+  join' "FULL OUTER JOIN"
+
+join' : String -> String -> Query -> Query -> Query
+join' joinType table onCondition pre =
+  pre ++ [ Sql <| "\n" ++ joinType ++ " " ++ table ++ " ON " ] ++ onCondition
 
 -- boolean
 
@@ -92,6 +92,10 @@ contains column s =
 
 
 -- comparators
+
+eq : String -> comparable -> Query
+eq column n =
+  [ Sql <| column ++ " = " ] ++ [ Parameter <| Number (toString n) ]
 
 gt : String -> number -> Query
 gt column n =
