@@ -4,8 +4,9 @@ import Html.App
 import Html exposing (div, text, pre)
 
 import Example
-import SqlBuilder exposing (prettyPrint)
+-- import SqlBuilder exposing (prettyPrint)
 
+import SQLRenderer exposing (..)
 --------------------------------------------------------------------------------
 
 -- boilerplate to show some basic html
@@ -28,4 +29,4 @@ main =
     }
 
 view model =
-  pre [] [ text <| prettyPrint Example.sql ]
+  pre [] [ text <| renderSimpleSelect  Example.example ]

@@ -1,151 +1,164 @@
 module SqlBuilder exposing (..)
 
 import String
-
-
-type Parameter =
-  Number String
-  | String String
-  -- TODO: add more types such as dates
-
-type QueryPart =
-  Sql String | Parameter Parameter
-
-
-type alias Query = List QueryPart
+import AST exposing (..)
 
 
 -- select
 
-select : List String -> Query
-select columns =
+select : TargetList -> SimpleSelect
+select targetList =
+  { targetList = targetList
+  , fromClause = Nothing
+  , whereClause = Nothing
+  , groupClause = Nothing
+  , sortClause = Nothing
+  }
+
+
+column : String -> TargetEl
+column name =
+  TargetElAExpr <| CExpr <| ColId name
+
+
+selectColumns : List String -> SimpleSelect
+selectColumns columnNames =
   let
-    columnsString = String.join ", " columns
+    targetList =
+      List.map (\name -> column name) columnNames
   in
-    [ Sql <| "SELECT " ++ columnsString ]
-
-allColumns : List String
-allColumns =
-  ["*"]
+    select targetList
 
 
--- from
-
-from : String -> Query -> Query
-from table pre =
-  pre ++ [ Sql <| "\nFROM " ++ table ]
-
-
--- where
-
-where' : Query -> Query -> Query
-where' whereSql pre =
-  pre ++ [ Sql "\nWHERE " ] ++ whereSql
-
--- join
+as_ : String -> TargetEl -> TargetEl
+as_ label targetEl =
+  case targetEl of
+    TargetElAExpr aExpr ->
+        TargetElAexprWithAlias aExpr label
+    TargetElAexprWithAlias aExpr _ ->
+        TargetElAexprWithAlias aExpr label
+    AllColumns ->
+      Debug.crash "Sorry, but you can't use the as_ function with an AllColumns target element"
 
 
-join =
-  join' "JOIN"
-
-innerJoin =
-  join' "INNER JOIN"
-
-leftJoin =
-  join' "LEFT JOIN"
-
-leftOuterJoin =
-  join' "LEFT OUTER JOIN"
-
-rightJoin =
-  join' "RIGHT JOIN"
-
-rightOuterJoin =
-  join' "RIGHT OUTER JOIN"
-
-fullJoin =
-  join' "FULL JOIN"
-
-fullOuterJoin =
-  join' "FULL OUTER JOIN"
-
-join' : String -> String -> Query -> Query -> Query
-join' joinType table onCondition pre =
-  pre ++ [ Sql <| "\n" ++ joinType ++ " " ++ table ++ " ON " ] ++ onCondition
-
--- boolean
-
-and : Query -> Query -> Query
-and pre post =
-  pre ++ [ Sql " AND " ] ++  post
-
-or : Query -> Query -> Query
-or pre post =
-  pre ++ [Sql " OR "] ++  post
+type DatePrecision =
+  Microseconds
+  | Milliseconds
+  | Second
+  | Minute
+  | Hour
+  | Day
+  | Week
+  | Month
+  | Quarter
+  | Year
+  | Decade
+  | Century
+  | Millennium
 
 
--- string matching
-
-contains : String -> String -> Query
-contains column s =
-  [ Sql <| column ++ " LIKE " ++ "\"%" ] ++ [ Parameter <| String s ] ++ [ Sql "%\"" ]
+function : String -> List AExpr -> AExpr
+function functionName args =
+  CExpr <| FuncExpr <| Function (functionName, args)
 
 
--- comparators
-
-eq : String -> comparable -> Query
-eq column n =
-  [ Sql <| column ++ " = " ] ++ [ Parameter <| Number (toString n) ]
-
-gt : String -> number -> Query
-gt column n =
-  [ Sql <| column ++ " > " ] ++ [ Parameter <| Number (toString n) ]
-
-gte : String -> number -> Query
-gte column n =
-  [ Sql <| column ++ " >= " ] ++ [ Parameter <| Number (toString n) ]
-
-lt : String -> number -> Query
-lt column n =
-  [ Sql <| column ++ " < " ] ++ [ Parameter <| Number (toString n) ]
-
-lte : String -> number -> Query
-lte column n =
-  [ Sql <| column ++ " <= " ] ++ [ Parameter <| Number (toString n) ]
-
-
--- ordering
-
-type OrderBy =
-  Asc | Desc
-
-orderBy : String -> OrderBy -> Query -> Query
-orderBy column orderBy pre =
+withPrecision : DatePrecision -> TargetEl -> TargetEl
+withPrecision precision targetEl =
+  -- we are unwrapping (which can lead to Debug.crash) to make the DSL a little
+  -- nicer. To be decided if this is a good idea.
   let
-    order = toString orderBy |> String.toUpper
+    wrapAExpr aExpr =
+      let
+        precisionString = toString precision |> String.toLower
+        precisionAExpr = CExpr <| AExprConst <| Sconst precisionString
+      in
+        function "date_trunc" [precisionAExpr, aExpr]
+
   in
-    pre ++ [ Sql <| "\nORDER BY " ++ column ++ " " ++ order ]
+    case targetEl of
+      TargetElAExpr aExpr ->
+        TargetElAExpr (wrapAExpr aExpr)
+      TargetElAexprWithAlias aExpr colLabel ->
+        TargetElAexprWithAlias (wrapAExpr aExpr) colLabel
+      AllColumns ->
+        Debug.crash "Sorry, but you can't use the withPrecision function with an AllColumns expression"
 
--- TODO
--- orderByMulti : List (String, OrderBy) -> String -> String
--- orderByMulti
 
-
--- Display SQL
-
-prettyPrint : Query -> String
-prettyPrint query =
+formatDate : String -> TargetEl -> TargetEl
+formatDate format targetEl =
+  -- we are unwrapping (which can lead to Debug.crash) to make the DSL a little
+  -- nicer. To be decided if this is a good idea.
   let
-    displaySqlPart queryPart =
-      case queryPart of
-        Sql s ->
-          s
-        Parameter p ->
-          case p of
-            Number i ->
-              toString i
-            String s ->
-              s
+    wrapAExpr aExpr =
+      let
+        formatAExpr = CExpr <| AExprConst <| Sconst format
+      in
+        function "to_char" [aExpr, formatAExpr]
+
   in
-    List.map displaySqlPart query
-    |> String.join " "
+    case targetEl of
+      TargetElAExpr aExpr ->
+        TargetElAExpr (wrapAExpr aExpr)
+      TargetElAexprWithAlias aExpr colLabel ->
+        TargetElAexprWithAlias (wrapAExpr aExpr) colLabel
+      AllColumns ->
+        Debug.crash "Sorry, but you can't use the formatDate function with an AllColumns expression"
+
+
+from : FromClause -> SimpleSelect -> SimpleSelect
+from fromClause simpleSelect =
+  { simpleSelect
+  | fromClause = Just fromClause
+  }
+
+
+fromTable : String -> SimpleSelect -> SimpleSelect
+fromTable tableName simpleSelect =
+  simpleSelect
+  |> from [ TableRef <| QualifiedNameList [ tableName ] ]
+
+
+fromSelect : SimpleSelect -> String -> SimpleSelect -> SimpleSelect
+fromSelect subSelect alias_ currentSelect =
+  currentSelect
+  |> from
+    [ TableRefSelect
+        subSelect
+        (AliasClauseAsColId alias_)
+    ]
+
+
+where_ : WhereClause -> SimpleSelect -> SimpleSelect
+where_ whereClause simpleSelect =
+  { simpleSelect
+  | whereClause = Just whereClause
+  }
+
+
+countStar : TargetEl
+countStar =
+  TargetElAExpr <| CExpr <| FuncExpr <| FunctionStar "COUNT"
+
+
+groupBy : List AExpr -> SimpleSelect -> SimpleSelect
+groupBy items currentSelect =
+  { currentSelect
+  | groupClause = Just items
+  }
+
+
+groupByColumn : String -> SimpleSelect -> SimpleSelect
+groupByColumn columnName currentSelect =
+  groupBy [CExpr <| ColId columnName] currentSelect
+
+
+sortBy : List SortBy -> SimpleSelect -> SimpleSelect
+sortBy items currentSelect =
+  { currentSelect
+  | sortClause = Just items
+  }
+
+
+sortByColumn : String -> AscDesc -> SimpleSelect -> SimpleSelect
+sortByColumn columnName ascDesc currentSelect =
+  sortBy [(CExpr <| ColId columnName, ascDesc)] currentSelect
