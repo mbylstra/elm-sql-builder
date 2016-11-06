@@ -1,14 +1,13 @@
 import String
 
 import Html.App
-import Html exposing (div, text, pre)
+import Html exposing (div, text)
 
-import Example
+import SqlBuilder exposing (..)
 
-import SQLRenderer exposing (..)
 --------------------------------------------------------------------------------
 
--- boilerplate to show some basic html
+-- boilerplate to show the generated SQL query in a browser
 
 init = ()
 
@@ -27,7 +26,7 @@ main =
     , view = view
     }
 
+
+
 view model =
-  -- pre [] [ text <| renderSimpleSelect  Example.example ]
-  -- pre [] [ text <| renderSimpleSelect  Example.cumulativeExample ]
-  pre [] [ text <| renderSimpleSelect  Example.runningTotalReposByMonth ]
+  div [] [ text sql ]

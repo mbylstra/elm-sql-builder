@@ -1,7 +1,9 @@
-module SQLRenderer exposing (..)
+module SqlBuilder.SQLRenderer exposing (..)
 
 import String
-import AST exposing (..)
+import Maybe
+import SqlBuilder.AST exposing (..)
+
 
 escapeString : String -> String
 escapeString s = s
@@ -47,8 +49,14 @@ renderAExpr aExpr =
       renderAExpr leftAExpr ++ " OR " ++ renderAExpr rightAExpr
     GreaterThan leftAExpr rightAExpr ->
       renderAExpr leftAExpr ++ " > " ++ renderAExpr rightAExpr
+    LessThan leftAExpr rightAExpr ->
+      renderAExpr leftAExpr ++ " < " ++ renderAExpr rightAExpr
     Equals leftAExpr rightAExpr ->
       renderAExpr leftAExpr ++ " = " ++ renderAExpr rightAExpr
+    GreaterThanEquals leftAExpr rightAExpr ->
+      renderAExpr leftAExpr ++ " >= " ++ renderAExpr rightAExpr
+    LessThanEquals leftAExpr rightAExpr ->
+      renderAExpr leftAExpr ++ " <= " ++ renderAExpr rightAExpr
 
 
 renderTargetEl : TargetEl -> String
@@ -71,17 +79,52 @@ renderTargetList targetList =
 renderRelationExpr : RelationExpr -> String
 renderRelationExpr relationExpr =
   case relationExpr of
-    QualifiedNameList names ->
-      String.join "," names
+    QualifiedName name ->
+      name
 
 
 renderTableRef : TableRef -> String
 renderTableRef tableRef =
   case tableRef of
-    TableRef relationExpr ->
-      renderRelationExpr relationExpr
+    TableRef relationExpr maybeAlias ->
+      renderRelationExpr relationExpr ++ " " ++ renderAlias maybeAlias
     TableRefSelect simpleSelect aliasClause ->
       "(" ++ renderSimpleSelect simpleSelect ++ "\n) " ++ renderAliasClause aliasClause
+    TableRefJoinedTable joinedTable ->
+      case joinedTable of
+        JoinedTable leftTableRef joinType rightTableRef joinQual ->
+          renderTableRef leftTableRef
+          ++ " " ++ renderJoinType joinType
+          ++ " " ++ renderTableRef rightTableRef
+          ++ " " ++ renderJoinQual joinQual
+
+
+renderAlias : Maybe AliasClause -> String
+renderAlias maybeAlias =
+  case maybeAlias of
+    Nothing -> ""
+    Just aliasClause ->
+      renderAliasClause aliasClause
+
+renderJoinQual : JoinQual -> String
+renderJoinQual joinQual =
+  case joinQual of
+    JoinQualOn aExpr ->
+      "ON " ++ renderAExpr aExpr
+--
+
+
+renderJoinType : JoinType -> String
+renderJoinType joinType =
+  case joinType of
+    InnerJoin -> "INNER JOIN"
+    LeftJoin -> "LEFT JOIN"
+    LeftOuterJoin -> "LEFT OUTER JOIN"
+    RightJoin -> "RIGHT JOIN"
+    RightOuterJoin -> "RIGHT OUTER JOIN"
+    FullJoin -> "FULL JOIN"
+    FullOuterJoin -> "FULL OUTER JOIN"
+
 
 renderAliasClause : AliasClause -> String
 renderAliasClause aliasClause =

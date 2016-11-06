@@ -1,4 +1,4 @@
-module AST exposing (..)
+module SqlBuilder.AST exposing (..)
 
 -- SELECT opt_all_clause opt_target_list
 -- into_clause from_clause where_clause
@@ -21,11 +21,27 @@ type alias WhereClause = AExpr
 type alias FromClause = List TableRef
 
 type TableRef =
-  TableRef RelationExpr
+  TableRef RelationExpr (Maybe AliasClause)
   | TableRefSelect SimpleSelect AliasClause -- there is actually a select_no_parens in between, but we're assuming SimpleSelect will get us far enough at the moment
+  | TableRefJoinedTable JoinedTable
 
 type RelationExpr =
-  QualifiedNameList (List String)
+  QualifiedName ColId
+
+type JoinedTable =
+  JoinedTable TableRef JoinType TableRef JoinQual
+
+type JoinType =
+  InnerJoin
+  | LeftJoin
+  | LeftOuterJoin
+  | RightJoin
+  | RightOuterJoin
+  | FullJoin
+  | FullOuterJoin
+
+type JoinQual =
+  JoinQualOn AExpr
 
 type alias TargetList = List TargetEl
 
@@ -41,6 +57,9 @@ type AExpr =
   | And AExpr AExpr
   | Or AExpr AExpr
   | GreaterThan AExpr AExpr
+  | GreaterThanEquals AExpr AExpr
+  | LessThan AExpr AExpr
+  | LessThanEquals AExpr AExpr
   | Equals AExpr AExpr
 
 type CExpr =
@@ -98,18 +117,18 @@ columns =
     , TargetElAExpr <| CExpr <| ColId "rating"
     ]
 
-fromMovie : List TableRef
-fromMovie =
-  [ TableRef <| QualifiedNameList [ "movie" ] ]
+-- fromMovie : List TableRef
+-- fromMovie =
+--   [ TableRef <| QualifiedNameList [ "movie" ] ]
 
-simpleSelectExample : SimpleSelect
-simpleSelectExample =
-  { targetList = columns
-  , fromClause = Just fromMovie
-  , whereClause = Just (Or ratingGt10 categoryEqualsComedy)
-  , groupClause = Nothing
-  , sortClause = Nothing
-  }
+-- simpleSelectExample : SimpleSelect
+-- simpleSelectExample =
+--   { targetList = columns
+--   , fromClause = Just fromMovie
+--   , whereClause = Just (Or ratingGt10 categoryEqualsComedy)
+--   , groupClause = Nothing
+--   , sortClause = Nothing
+--   }
 
 
 -- funcExpr
