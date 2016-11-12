@@ -185,6 +185,22 @@ renderSortClause maybeSortClause =
         |> String.join ", "
       )
 
+renderLimitClause : Maybe Int -> String
+renderLimitClause maybeLimitClause =
+  case maybeLimitClause of
+    Nothing ->
+      ""
+    Just n ->
+      "\nLIMIT " ++ toString n
+
+renderOffsetClause : Maybe Int -> String
+renderOffsetClause maybeOffsetClause =
+  case maybeOffsetClause of
+    Nothing ->
+      ""
+    Just n ->
+      "\nOFFSET " ++ toString n
+
 
 renderSimpleSelect : SimpleSelect -> String
 renderSimpleSelect simpleSelect =
@@ -194,3 +210,5 @@ renderSimpleSelect simpleSelect =
   ++ renderWhereClause simpleSelect.whereClause
   ++ renderGroupClause simpleSelect.groupClause
   ++ renderSortClause simpleSelect.sortClause
+  ++ renderLimitClause simpleSelect.limitClause
+  ++ renderOffsetClause simpleSelect.offsetClause

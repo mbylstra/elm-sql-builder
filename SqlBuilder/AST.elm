@@ -14,6 +14,8 @@ type alias SimpleSelect =
   -- be part of SimpleSelect, it should be part of select_no_parens, which
   -- simpleSelect is a member of.
   , sortClause : Maybe SortClause
+  , limitClause : Maybe Int
+  , offsetClause : Maybe Int
   }
 
 type alias WhereClause = AExpr

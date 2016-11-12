@@ -13,6 +13,8 @@ select targetList =
   , whereClause = Nothing
   , groupClause = Nothing
   , sortClause = Nothing
+  , limitClause = Nothing
+  , offsetClause = Nothing
   }
 
 
@@ -267,3 +269,17 @@ sortBy items currentSelect =
 sortByColumn : String -> AscDesc -> SimpleSelect -> SimpleSelect
 sortByColumn columnName ascDesc currentSelect =
   sortBy [(CExpr <| ColId columnName, ascDesc)] currentSelect
+
+
+limit : Int -> SimpleSelect -> SimpleSelect
+limit n currentSelect =
+  { currentSelect
+  | limitClause = Just n
+  }
+
+
+offset : Int -> SimpleSelect -> SimpleSelect
+offset n currentSelect =
+  { currentSelect
+  | offsetClause = Just n
+  }
